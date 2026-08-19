@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(command -v python3)",
+      "Bash(echo \"python3: $\\(command -v python3 || echo MISSING\\)\")",
+      "Bash(command -v uv)",
+      "Bash(echo \"uv: $\\(command -v uv || echo MISSING\\)\")",
+      "Bash(command -v make)",
+      "Bash(echo \"\\(exit $?\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(PYTHONIOENCODING=utf-8 python -c ' *)",
+      "Bash(PYTHONIOENCODING=utf-8 python -)"
+    ]
+  }
+}
