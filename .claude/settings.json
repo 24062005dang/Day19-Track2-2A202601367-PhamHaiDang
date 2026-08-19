@@ -9,7 +9,26 @@
       "Bash(echo \"\\(exit $?\\)\")",
       "Bash(python -c ' *)",
       "Bash(PYTHONIOENCODING=utf-8 python -c ' *)",
-      "Bash(PYTHONIOENCODING=utf-8 python -)"
+      "Bash(PYTHONIOENCODING=utf-8 python -)",
+      "Bash(python -m venv .venv)",
+      "Bash(.venv/Scripts/python.exe -m pip install -q -U pip)",
+      "Bash(.venv/Scripts/python.exe -m pip install -r requirements.txt pandas scikit-learn nbconvert)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(.venv/Scripts/python.exe scripts/seed_corpus.py)",
+      "Bash(export PYTHONUTF8=1 PYTHONIOENCODING=utf-8)",
+      "Bash(.venv/Scripts/python.exe scripts/gen_agent_queries.py)",
+      "Bash(.venv/Scripts/python.exe scripts/gen_spend.py)",
+      "Bash(.venv/Scripts/python.exe scripts/verify_lite.py)",
+      "Bash(.venv/Scripts/python.exe -m pytest -q)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/ -q)",
+      "Bash(echo \"make test exit code = $?  \\(5 = no tests collected = FAIL\\)\")",
+      "Bash(echo \"exit=$?\")",
+      "Bash(rm -f notebooks/*.ipynb notebooks/*.html)",
+      "Bash(.venv/Scripts/python.exe -m jupytext --to notebook notebooks/0[1-8]*.py)",
+      "Bash(.venv/Scripts/python.exe -c \"import playwright; print\\('playwright OK'\\)\")",
+      "Bash(python -c \"import playwright; print\\('system playwright OK'\\)\")",
+      "Bash(.venv/Scripts/python.exe -m pip install -q playwright)",
+      "Bash(.venv/Scripts/python.exe -m playwright install chromium)"
     ]
   }
 }

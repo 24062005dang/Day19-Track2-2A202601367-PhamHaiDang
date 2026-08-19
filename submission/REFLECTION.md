@@ -1,7 +1,7 @@
 # Reflection — Lab 19
 
-**Tên:** Nguyễn Minh Hùng
-**Cohort:** 2A202601183
+**Tên:** Phạm Hải Đăng
+**Cohort:** 2A202601367
 **Path đã chạy:** lite
 
 ---

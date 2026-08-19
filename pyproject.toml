@@ -33,7 +33,9 @@ docker = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["app", "scripts"]
+# `tests` must be listed: the suite lives in tests/, so a testpaths of just
+# app+scripts collects nothing and `make test` exits 5 (= no tests ran).
+testpaths = ["tests", "app", "scripts"]
 python_files = ["test_*.py"]
 
 [tool.ruff]

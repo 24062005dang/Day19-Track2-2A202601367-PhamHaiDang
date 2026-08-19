@@ -17,6 +17,7 @@
 import _setup  # noqa: F401
 import statistics
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -30,10 +31,14 @@ import httpx
 
 # %%
 ROOT = Path(_setup.__file__).resolve().parent.parent
-# proc = subprocess.Popen(
-#     ["uvicorn", "app.main:app", "--port", "8000", "--log-level", "warning"],
-#     cwd=str(ROOT),
-# )
+# `sys.executable -m uvicorn` thay vì bare "uvicorn": trên Windows, script
+# shim nằm ở .venv/Scripts (không phải .venv/bin) nên bare "uvicorn" có thể
+# không có trên PATH khi chạy headless. Gọi qua interpreter thì luôn đúng venv.
+proc = subprocess.Popen(
+    [sys.executable, "-m", "uvicorn", "app.main:app", "--port", "8000",
+     "--log-level", "warning"],
+    cwd=str(ROOT),
+)
 
 # Đợi server up + warm (Searcher.from_corpus loads embeddings + indexes 1000 docs)
 URL = "http://localhost:8000"
@@ -127,8 +132,8 @@ else:
 # ## 5. Cleanup — stop the API server
 
 # %%
-# proc.terminate()
-# proc.wait(timeout=5)
+proc.terminate()
+proc.wait(timeout=5)
 print("API server stopped")
 
 # %% [markdown]

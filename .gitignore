@@ -12,6 +12,10 @@ __pycache__/
 # NOTE: notebooks/*.ipynb IS committed for submission (with output cells preserved
 # for grading). The Jupytext `.py` files are the source-of-truth template;
 # `.ipynb` is the student's executed deliverable.
+# The .html files are throwaway nbconvert intermediates that
+# scripts/take_screenshots.py renders on its way to the .png — the .png in
+# submission/screenshots/ is the deliverable, so the HTML stays untracked.
+notebooks/*.html
 
 # Lab artifacts
 data/corpus_vn.jsonl
@@ -30,6 +34,7 @@ app/feast_repo/online_store.db
 .DS_Store
 .idea/
 .vscode/
+.claude/
 *.swp
 
 # Advanced-mission generated artifacts (NB6 + NB8)
