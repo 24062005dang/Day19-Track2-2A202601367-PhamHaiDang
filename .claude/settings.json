@@ -28,7 +28,10 @@
       "Bash(.venv/Scripts/python.exe -c \"import playwright; print\\('playwright OK'\\)\")",
       "Bash(python -c \"import playwright; print\\('system playwright OK'\\)\")",
       "Bash(.venv/Scripts/python.exe -m pip install -q playwright)",
-      "Bash(.venv/Scripts/python.exe -m playwright install chromium)"
+      "Bash(.venv/Scripts/python.exe -m playwright install chromium)",
+      "Bash(git log *)",
+      "Bash(grep -E \"\\\\.claude/|\\\\.html$|^data/|registry\\\\.db|online_store\\\\.db\")",
+      "Bash(.venv/Scripts/python.exe -c ' *)"
     ]
   }
 }
