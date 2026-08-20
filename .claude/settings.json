@@ -35,7 +35,8 @@
       "Bash(netstat -ano)",
       "Bash(.venv/Scripts/python.exe -m uvicorn app.main:app --port 8000 --log-level info)",
       "Bash(curl -s http://localhost:8000/healthz)",
-      "Bash(python -c \"import pandas\")"
+      "Bash(python -c \"import pandas\")",
+      "Bash(.venv/Scripts/python.exe -)"
     ]
   }
 }

@@ -41,17 +41,28 @@ proc = subprocess.Popen(
 )
 
 # Đợi server up + warm (Searcher.from_corpus loads embeddings + indexes 1000 docs)
+# Ngân sách 15 phút, không phải 60 s: startup phải embed cả 1000 doc, và trên CPU
+# chậm (không AVX-512 / bị throttle) riêng bước đó đã mất vài phút. 60 s là con số
+# đúng cho máy nhanh và fail giả trên máy chậm — thứ đáng chờ thì chờ cho đủ.
 URL = "http://localhost:8000"
-for _ in range(60):
+DEADLINE_S = 900
+t_start = time.perf_counter()
+while (waited := time.perf_counter() - t_start) < DEADLINE_S:
     try:
         r = httpx.get(f"{URL}/healthz", timeout=2.0)
         if r.status_code == 200 and r.json().get("ready"):
+            print(f"server ready sau {waited:.0f}s")
             break
     except httpx.HTTPError:
         pass
-    time.sleep(1)
+    if proc.poll() is not None:                     # server chết -> đừng chờ tiếp
+        raise RuntimeError(f"uvicorn exited early with code {proc.returncode}")
+    if int(waited) % 30 == 0 and waited > 1:
+        print(f"  … đang đợi server warm ({waited:.0f}s / {DEADLINE_S}s)")
+    time.sleep(2)
 else:
-    raise RuntimeError("API didn't become ready within 60s")
+    proc.terminate()
+    raise RuntimeError(f"API didn't become ready within {DEADLINE_S}s")
 
 print(httpx.get(f"{URL}/healthz").json())
 
@@ -106,6 +117,15 @@ def benchmark_mode(mode: str, reps: int = 2) -> dict[str, float]:
         "p99_wall":   percentile(wall_latencies, 0.99),
     }
 
+
+# Warm-up: rubric đo P99 "after warm-up", nên 10 query đầu KHÔNG được vào phép
+# đo. Lần gọi đầu tiên tới mỗi mode phải trả giá lazy-init (ONNX session cho
+# semantic/hybrid, cache BM25 cho keyword) — tính nó vào P99 là đo cold start
+# chứ không phải đo steady state.
+for warm_mode in ("keyword", "semantic", "hybrid"):
+    for q in golden[:10]:
+        httpx.get(f"{URL}/search", params={"q": q["query"], "mode": warm_mode})
+print("warm-up: 30 query (10 × 3 mode) — không tính vào bảng dưới\n")
 
 print(f"  {'mode':10}  {'P50':>7}  {'P95':>7}  {'P99':>7}  {'P99(wall)':>9}")
 results = {}
