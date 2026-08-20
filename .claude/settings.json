@@ -58,7 +58,8 @@
       "Bash(python -c \"import os,platform;print\\(os.cpu_count\\(\\),platform.processor\\(\\)\\)\")",
       "Bash(curl -s http://localhost:8011/healthz)",
       "Bash(nohup .venv/Scripts/python.exe -m uvicorn scripts._exp_main:app --port 8012 --log-level warning)",
-      "Bash(curl -s http://localhost:8012/healthz)"
+      "Bash(curl -s http://localhost:8012/healthz)",
+      "Bash(.venv/Scripts/python.exe -c \"import jupytext,nbclient,nbformat;print\\('jupytext',jupytext.__version__\\)\")"
     ]
   }
 }
