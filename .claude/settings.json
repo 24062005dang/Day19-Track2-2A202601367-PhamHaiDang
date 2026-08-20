@@ -31,7 +31,11 @@
       "Bash(.venv/Scripts/python.exe -m playwright install chromium)",
       "Bash(git log *)",
       "Bash(grep -E \"\\\\.claude/|\\\\.html$|^data/|registry\\\\.db|online_store\\\\.db\")",
-      "Bash(.venv/Scripts/python.exe -c ' *)"
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "Bash(netstat -ano)",
+      "Bash(.venv/Scripts/python.exe -m uvicorn app.main:app --port 8000 --log-level info)",
+      "Bash(curl -s http://localhost:8000/healthz)",
+      "Bash(python -c \"import pandas\")"
     ]
   }
 }
