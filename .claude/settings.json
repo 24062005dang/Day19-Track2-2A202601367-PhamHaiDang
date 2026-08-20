@@ -36,7 +36,12 @@
       "Bash(.venv/Scripts/python.exe -m uvicorn app.main:app --port 8000 --log-level info)",
       "Bash(curl -s http://localhost:8000/healthz)",
       "Bash(python -c \"import pandas\")",
-      "Bash(.venv/Scripts/python.exe -)"
+      "Bash(.venv/Scripts/python.exe -)",
+      "Bash(.venv/Scripts/python.exe /tmp/dumpnb.py notebooks/03_search_api_benchmark.ipynb notebooks/04_feast_feature_store.ipynb)",
+      "Bash(.venv/Scripts/python.exe /tmp/dumpnb.py notebooks/05_filtered_search.ipynb notebooks/06_agent_retrieval.ipynb notebooks/07_semantic_cache.ipynb notebooks/08_feature_engineering.ipynb)",
+      "Bash(wmic cpu *)",
+      "Bash(grep -v '^$')",
+      "PowerShell(Get-CimInstance Win32_Processor)"
     ]
   }
 }
