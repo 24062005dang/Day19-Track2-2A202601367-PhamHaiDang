@@ -8,11 +8,17 @@ path silently used BAAI/bge-small-en-v1.5, an ENGLISH model, which is exactly
 why NB2 shows weak recall on Vietnamese paraphrases. Students were promised an
 upgrade that never happened.
 
-The default is unchanged (fastembed / bge-small / 384-dim), so the lite path
-and every rubric threshold behave exactly as before. The other backends are
-opt-in via the environment.
+The default is the 384-dim English bge-small, so the lite path and every rubric
+threshold behave as before -- but it now resolves to the **non-quantized** ONNX
+build. The int8-quantized `-v1.5` build fastembed ships by default runs its
+MatMulInteger kernels on a slow path on CPUs without AVX-VNNI (e.g. Intel
+Kaby Lake): ~140 ms to embed one 10-token query, versus ~12 ms non-quantized.
+Since a single query embed dominates NB3's server-side P99, that one choice is
+the difference between a 35 ms and a 400 ms hybrid P99. Keep the quantized
+build reachable as `fastembed-q` so the comparison stays measurable.
 
-    EMBEDDING_BACKEND=fastembed     BAAI/bge-small-en-v1.5     384   (default, lite)
+    EMBEDDING_BACKEND=fastembed     BAAI/bge-small-en           384  (default, lite)
+    EMBEDDING_BACKEND=fastembed-q   BAAI/bge-small-en-v1.5      384  (int8; slow without AVX-VNNI)
     EMBEDDING_BACKEND=multilingual  intfloat/multilingual-e5-large 1024 (fastembed)
     EMBEDDING_BACKEND=bge-m3        BAAI/bge-m3                1024  (sentence-transformers)
     EMBEDDING_BACKEND=openai        text-embedding-3-small     1536  (needs OPENAI_API_KEY)
@@ -37,8 +43,12 @@ class BackendSpec:
 
 
 BACKENDS: dict[str, BackendSpec] = {
-    "fastembed": BackendSpec("BAAI/bge-small-en-v1.5", 384, "fastembed",
-                             "English-focused; weak on Vietnamese paraphrase (that is the NB2 lesson)"),
+    "fastembed": BackendSpec("BAAI/bge-small-en", 384, "fastembed",
+                             "English-focused (weak on Vietnamese paraphrase — that is the NB2 lesson); "
+                             "non-quantized ONNX, ~12 ms/query"),
+    "fastembed-q": BackendSpec("BAAI/bge-small-en-v1.5", 384, "fastembed",
+                               "int8-quantized bge-small. Fast on CPUs with AVX-VNNI, but ~140 ms/query "
+                               "without it — see the NB3 latency note"),
     "multilingual": BackendSpec("intfloat/multilingual-e5-large", 1024, "fastembed",
                                 "Multilingual, no extra dependency, ~2.2 GB download"),
     "bge-m3": BackendSpec("BAAI/bge-m3", 1024, "sentence-transformers",

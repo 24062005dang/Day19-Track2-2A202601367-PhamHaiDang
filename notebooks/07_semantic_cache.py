@@ -31,13 +31,13 @@ from pathlib import Path
 
 warnings.filterwarnings("ignore")
 
-from fastembed import TextEmbedding
 from qdrant_client import QdrantClient
 
 from app.cache import SemanticCache
+from app.embeddings import Embedder
 
 DATA = Path(_setup.__file__).resolve().parent.parent / "data"
-embedder = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+embedder = Embedder()
 client = QdrantClient(":memory:")
 
 # %% [markdown]
@@ -107,13 +107,31 @@ for th in (0.60, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95):
     print(f"{th:>8.2f}{saved:>12.0%}{wrong:>14.0%}   {flag}")
 
 # %% [markdown]
-# **Đọc bảng này thật kỹ.** Ngưỡng 0,75 — con số AWS công bố — trên corpus *này*
-# vẫn để lọt một tỉ lệ đáng kể câu trả lời sai. Phải lên ~0,85 mới vừa giữ được
-# gần như toàn bộ phần tiết kiệm vừa đưa tỉ lệ sai về 0. Lên 0,95 thì an toàn
-# nhưng mất một nửa phần tiết kiệm.
+# **Đọc bảng này thật kỹ — và đọc cả cột `tiết kiệm` đứng im ở 100%.**
+#
+# Ngưỡng 0,75 (con số AWS công bố) trên corpus *này* để lọt **100%** câu trả lời
+# sai: mọi probe của câu **chưa** có trong cache vẫn vượt ngưỡng. Tỉ lệ sai chỉ
+# bắt đầu giảm từ 0,85 (81%), qua 0,90 (19%), và về 0% ở **0,95** — trong khi
+# tiết kiệm không rơi một điểm nào.
+#
+# Vì sao **cả hai** cột đều dính trần? Vì embedder mặc định là `bge-small-en`,
+# một model **tiếng Anh**, đang embed câu **tiếng Việt** — đúng bài học NB2. Nó
+# không phân giải được tiếng Việt nên dồn *mọi* câu tiếng Việt vào một chóp rất
+# hẹp của không gian vector: hai câu khác hẳn chủ đề vẫn cosine ≈ 0,85. Thang
+# similarity bị **nén**, nên:
+#
+# * ngưỡng hiệu dụng dịch hết lên vùng 0,90–0,95;
+# * 0,75 không còn nghĩa "gần giống" — nó gần như chỉ có nghĩa "cùng là tiếng Việt".
+#
+# **Chọn cho corpus này: `threshold = 0,95`** — điểm duy nhất có sai = 0%, và ở
+# đây nó không phải trả giá bằng tiết kiệm. Nhưng con số cao bất thường đó là
+# *triệu chứng*, không phải thành tích: ngưỡng đang bù cho một model sai. Cách
+# sửa đúng là đổi sang `bge-m3` đa ngữ rồi **sweep lại** — lúc đó similarity mới
+# giãn ra và ngưỡng an toàn sẽ tụt về vùng thấp hơn.
 #
 # > Không có ngưỡng đúng phổ quát. 0,75 là **điểm bắt đầu để đo**, không phải
-# > hằng số để copy. Phân bố query của bạn quyết định con số cuối cùng.
+# > hằng số để copy. Ngưỡng là thuộc tính của **cặp (model, phân bố query)** —
+# > đổi một trong hai thì phải đo lại từ đầu.
 
 # %% [markdown]
 # ## 3. TTL: câu trả lời cũ không tự biết mình cũ

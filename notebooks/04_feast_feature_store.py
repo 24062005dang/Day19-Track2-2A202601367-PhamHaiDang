@@ -183,19 +183,45 @@ else:
 
 # %%
 import pandas as pd
+
+PIT_FEATURES = [
+    "user_profile_features:reading_speed_wpm",
+    "user_profile_features:topic_affinity",
+]
+
+# `make_user_profile` stamps u_00i at NOW - i hours, so u_001/u_002/u_003 have
+# feature events at NOW-1h / NOW-2h / NOW-3h. A PIT join only returns a value
+# whose event_timestamp is at or BEFORE the requested timestamp — asking for
+# u_001 "as of NOW-2h" is asking before that row existed, and Feast correctly
+# returns nothing. Each request timestamp here therefore sits *after* that
+# user's event: NOW / NOW-1h / NOW-2h.
 entity_df = pd.DataFrame({
     "user_id": ["u_001", "u_002", "u_003"],
-    "event_timestamp": [NOW - timedelta(hours=2), NOW - timedelta(hours=1), NOW],
+    "event_timestamp": [NOW, NOW - timedelta(hours=1), NOW - timedelta(hours=2)],
 })
 
-historical = fs.get_historical_features(
-    entity_df=entity_df,
-    features=[
-        "user_profile_features:reading_speed_wpm",
-        "user_profile_features:topic_affinity",
-    ],
-).to_df()
+historical = fs.get_historical_features(entity_df=entity_df, features=PIT_FEATURES).to_df()
 print(historical)
+print(f"\nPIT join returned {len(historical)} rows × {historical.shape[1]} columns")
+assert len(historical) == 3, f"expected 3 rows, got {len(historical)}"
+
+# %% [markdown]
+# ### Chứng minh PIT thật sự chặn giá trị tương lai
+#
+# Cùng 3 user, nhưng lần này hỏi ở mốc **trước** khi feature row tồn tại
+# (`NOW - 5h`, sớm hơn cả `u_003` ở `NOW-3h`). PIT join đúng phải **không**
+# trả giá trị nào — nếu nó trả về thì ta đang huấn luyện trên dữ liệu tương lai.
+
+# %%
+too_early = pd.DataFrame({
+    "user_id": ["u_001", "u_002", "u_003"],
+    "event_timestamp": [NOW - timedelta(hours=5)] * 3,
+})
+early_df = fs.get_historical_features(entity_df=too_early, features=PIT_FEATURES).to_df()
+n_leaked = int(early_df["reading_speed_wpm"].notna().sum()) if len(early_df) else 0
+print(f"hỏi ở NOW-5h  → {len(early_df)} dòng, {n_leaked} dòng có giá trị")
+assert n_leaked == 0, "PIT join bị rò giá trị tương lai!"
+print("PASS — không có giá trị nào bị rò từ tương lai")
 
 # %% [markdown]
 # ## Deliverable evidence

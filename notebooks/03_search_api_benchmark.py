@@ -149,6 +149,41 @@ else:
     print("  Check: re-run benchmark after 10 warm-up queries; or reduce RRF depth")
 
 # %% [markdown]
+# ### Cái gì thật sự chi phối P99 — và một cái bẫy int8
+#
+# Chia hybrid ra hai phần đo được: BM25 trên 1000 doc là ~3 ms, còn embed **một**
+# câu query là phần còn lại. Nói cách khác P99 của hybrid gần như **bằng** chi phí
+# embed một câu — không phải chi phí ANN search (Qdrant trả lời trong micro giây ở
+# quy mô 1000 vector). Muốn giảm tail latency thì phải nhắm vào bước embed.
+#
+# Và đây là chỗ có bẫy thật. `fastembed` mặc định tải bản ONNX **int8 đã lượng tử
+# hoá** cho `BAAI/bge-small-en-v1.5`. Trên CPU có AVX-VNNI, kernel `MatMulInteger`
+# chạy nhanh. Trên CPU **không** có (ví dụ Intel Kaby Lake / i5-8350U của lab này),
+# nó rơi xuống đường chậm:
+#
+# | ONNX build | model | 1 query (10 token) |
+# |---|---|---|
+# | int8 quantized | `BAAI/bge-small-en-v1.5` | **~140 ms** |
+# | fp32 | `BAAI/bge-small-en` | **~12 ms** |
+#
+# Cùng họ model, cùng 384 chiều, chênh **~10×** — chỉ khác một chi tiết build.
+# Lab dùng bản fp32 (`EMBEDDING_BACKEND=fastembed`); bản int8 vẫn dùng được qua
+# `EMBEDDING_BACKEND=fastembed-q` nếu bạn muốn tự đo lại trên CPU của mình.
+#
+# > Bài học vận hành: "lượng tử hoá thì nhanh hơn" **chỉ đúng khi CPU có
+# > instruction tương ứng**. Không benchmark trên đúng máy đích thì một quyết
+# > định nghe rất hợp lý lại làm hỏng SLA gấp 10 lần.
+
+# %%
+# Tách chi phí: BM25 thuần vs hybrid, để thấy phần embed chiếm bao nhiêu.
+kw_p50 = results["keyword"]["p50_server"]
+hyb_p50 = results["hybrid"]["p50_server"]
+print(f"BM25-only P50          : {kw_p50:6.1f}ms")
+print(f"Hybrid   P50           : {hyb_p50:6.1f}ms")
+print(f"→ phần embed + ANN      : {hyb_p50 - kw_p50:6.1f}ms  "
+      f"({(hyb_p50 - kw_p50) / hyb_p50:.0%} của hybrid P50)")
+
+# %% [markdown]
 # ## 5. Cleanup — stop the API server
 
 # %%

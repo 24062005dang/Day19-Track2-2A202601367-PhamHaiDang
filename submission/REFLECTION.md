@@ -12,20 +12,24 @@
 > `paraphrase` / `mixed`), và tại sao? Khi nào bạn **không** dùng hybrid
 > (i.e. khi nào pure BM25 hoặc pure vector là lựa chọn đúng)?
 
-- **Exact**: Keyword (BM25) thường thắng hoặc ngang bằng Hybrid, vì chứa từ khoá kỹ thuật chính xác xuất hiện trong tài liệu.
-- **Paraphrase**: Semantic (Vector) có tiềm năng thắng cao nhất do bắt được ngữ nghĩa dù không trùng từ khóa. (Lưu ý với model mặc định của lite path là `bge-small` tiếng Anh, điểm semantic tiếng Việt có thể thấp, nhưng với model tốt như `bge-m3` thì semantic sẽ thắng).
-- **Mixed**: Hybrid (RRF) thắng tuyệt đối vì tận dụng được cả signal từ khoá exact và ý tưởng paraphrase bổ sung cho nhau.
+- **Exact** (15 query): BM25 **96,7%** thắng sát hybrid 96,0%; semantic 80,0%. Query chứa đúng token xuất hiện verbatim trong doc nên thứ hạng BM25 gần tối ưu — RRF trộn thêm vài doc semantic sai làm hybrid mất 0,7 điểm.
+- **Paraphrase** (15): cả 3 đều yếu — kw 33,3%, sem 28,7%, hyb 34,7%. Semantic *lẽ ra* phải thắng, nhưng `bge-small-en` là model **tiếng Anh** nên embed câu tiếng Việt diễn đạt lại rất kém. Bài học: **chọn model quan trọng hơn chọn thuật toán fusion**.
+- **Mixed** (20): hybrid thắng rõ — **99,5%** vs kw 97,0%, sem 94,0%. Query có cả từ khoá exact lẫn ý diễn đạt lại, hai retriever bù khuyết nhau đúng như RRF thiết kế.
+- **Trung bình 50 query:** hyb 79,0% > kw 77,8% > sem 70,2%.
 
 **Khi nào KHÔNG dùng Hybrid:**
-- Dùng **pure BM25** khi query chủ yếu là tìm kiếm ID, mã số đơn hàng, hay từ khóa đặc thù cần độ chính xác tuyệt đối mà vector khó thể hiện.
-- Dùng **pure Vector** khi query là dạng câu hỏi tự nhiên thuần túy, tóm tắt dài, và không hề có keyword cụ thể để match. Ngoài ra có thể không dùng Hybrid nếu hệ thống yêu cầu độ trễ (latency) siêu thấp vì Hybrid yêu cầu chạy song song 2 retriever rồi tính RRF.
+- **Pure BM25** cho ID, SKU, error code — token phải khớp chính xác, vector chỉ thêm nhiễu và tốn latency.
+- **Pure Vector** khi query là câu hỏi tự nhiên dài, không chia token nào với doc.
+- Khi **latency là ràng buộc cứng**: NB3 đo keyword P99 = 20,4 ms, còn hybrid phải embed thêm một câu query — bước embed đó chiếm gần toàn bộ P99.
 
 ---
 
 ## Điều ngạc nhiên nhất khi làm lab này
 
-Việc sử dụng RRF trong Hybrid search giúp tự động "hòa trộn" thứ hạng từ BM25 và Vector một cách cực kì hiệu quả mà không cần phải tinh chỉnh weight cho từng mô hình.
-
+RRF trộn thứ hạng của BM25 và vector mà **không cần tune weight** cho từng
+retriever — chỉ cần rank, không cần score, nên hai thang điểm hoàn toàn khác
+nhau (BM25 không chuẩn hoá vs cosine 0–1) vẫn ghép được. Bất ngờ thứ hai là
+latency: bước embed câu query chiếm gần như toàn bộ P99, không phải bước ANN.
 
 ---
 

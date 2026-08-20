@@ -22,7 +22,7 @@ from app.embeddings import Embedder
 
 Mode = Literal["keyword", "semantic", "hybrid"]
 # Model + dimension now come from EMBEDDING_BACKEND (see app/embeddings.py).
-# Defaults are unchanged: fastembed / BAAI/bge-small-en-v1.5 / 384-dim.
+# Default: fastembed / BAAI/bge-small-en / 384-dim (non-quantized ONNX).
 EMBED_MODEL = Embedder().model_name
 EMBED_DIM = Embedder().dim
 COLLECTION = "lab19_corpus"

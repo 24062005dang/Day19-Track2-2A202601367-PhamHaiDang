@@ -27,6 +27,8 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from rank_bm25 import BM25Okapi
 
+from app.embeddings import Embedder
+
 DATA = Path(_setup.__file__).resolve().parent.parent / "data"
 
 # %% [markdown]
@@ -40,11 +42,11 @@ tokenized = [(d["title"] + " " + d["text"]).lower().split() for d in docs]
 bm25 = BM25Okapi(tokenized)
 
 # Vector
-embedder = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+embedder = Embedder()
 client = QdrantClient(":memory:")
 client.create_collection(
     collection_name="lab19",
-    vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+    vectors_config=VectorParams(size=embedder.dim, distance=Distance.COSINE),
 )
 BATCH = 64
 points = []
@@ -178,8 +180,8 @@ for t in ("exact", "paraphrase", "mixed"):
 #   thường ngang bằng (keyword signal đã đủ mạnh).
 # - `paraphrase` queries dùng từ Việt **không** xuất hiện verbatim trong docs
 #   → cả BM25 và vector đều giảm điểm. Trên synthetic corpus 1000-doc với
-#   embedding model `BAAI/bge-small-en-v1.5` (English-trained), semantic
-#   recall trên Vietnamese paraphrases yếu (24-32%). **Đổi sang `bge-m3`
+#   embedding model `BAAI/bge-small-en` (English-trained), semantic
+#   recall trên Vietnamese paraphrases yếu (~29%). **Đổi sang `bge-m3`
 #   (full Docker path) sẽ giúp semantic thắng paraphrase queries** — đây là
 #   teaching moment cho "embedding model choice matters".
 # - `mixed` queries có cả từ exact + ý tưởng paraphrased → **hybrid thắng rõ**

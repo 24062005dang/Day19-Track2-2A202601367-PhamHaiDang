@@ -11,12 +11,24 @@ import pytest
 from app.embeddings import BACKENDS, DEFAULT_BACKEND, Embedder
 
 
-def test_default_backend_is_unchanged():
-    """The lite path and every rubric threshold depend on this exact default."""
+def test_default_backend_is_the_nonquantized_bge_small():
+    """The lite path and every rubric threshold depend on this exact default.
+
+    It must stay the NON-quantized build: the int8 `-v1.5` ONNX takes ~140 ms
+    to embed one query on a CPU without AVX-VNNI versus ~12 ms here, which on
+    its own pushes NB3's hybrid P99 past the 50 ms threshold.
+    """
     e = Embedder()
     assert e.backend == DEFAULT_BACKEND == "fastembed"
-    assert e.model_name == "BAAI/bge-small-en-v1.5"
+    assert e.model_name == "BAAI/bge-small-en"
     assert e.dim == 384
+
+
+def test_quantized_build_stays_reachable():
+    """Kept as an explicit backend so the latency comparison is reproducible."""
+    e = Embedder("fastembed-q")
+    assert e.model_name == "BAAI/bge-small-en-v1.5"
+    assert e.dim == 384                        # same dim -> no re-index needed
 
 
 def test_env_var_is_actually_honoured(monkeypatch):

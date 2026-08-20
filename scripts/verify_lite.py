@@ -12,6 +12,10 @@ import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+# Run as `python scripts/verify_lite.py`, sys.path[0] is scripts/ — so `app` is
+# not importable until the repo root is on the path.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 def step(label: str) -> None:
@@ -22,11 +26,15 @@ def main() -> int:
     print("Day 19 lite smoke test")
     try:
         # ── 1. fastembed ────────────────────────────────────────────────
-        step("fastembed loads + embeds (BAAI/bge-small-en-v1.5)")
-        from fastembed import TextEmbedding
-        emb_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
-        sample = list(emb_model.embed(["cloud computing tiếng Việt"]))
-        assert len(sample) == 1 and len(sample[0]) == 384, f"unexpected vector shape: {len(sample[0])}"
+        # Go through Embedder so this smoke test verifies the SAME model the
+        # notebooks and the API use — hard-coding a name here meant the check
+        # could pass while EMBEDDING_BACKEND pointed somewhere else.
+        from app.embeddings import Embedder
+        emb = Embedder()
+        step(f"fastembed loads + embeds ({emb.model_name})")
+        sample = list(emb.embed(["cloud computing tiếng Việt"]))
+        assert len(sample) == 1 and len(sample[0]) == emb.dim, \
+            f"unexpected vector shape: {len(sample[0])} (expected {emb.dim})"
 
         # ── 2. Qdrant in-memory ─────────────────────────────────────────
         step("Qdrant in-memory: index + search")
@@ -35,7 +43,7 @@ def main() -> int:
         client = QdrantClient(":memory:")
         client.create_collection(
             collection_name="smoke",
-            vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+            vectors_config=VectorParams(size=emb.dim, distance=Distance.COSINE),
         )
         client.upsert(
             collection_name="smoke",

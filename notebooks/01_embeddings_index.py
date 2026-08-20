@@ -18,9 +18,10 @@ import _setup  # noqa: F401  -- adds repo root to sys.path
 import json
 from pathlib import Path
 
-from fastembed import TextEmbedding
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
+
+from app.embeddings import Embedder, describe
 
 DATA = Path(_setup.__file__).resolve().parent.parent / "data"
 
@@ -42,16 +43,23 @@ print(f"First doc:")
 print(json.dumps(docs[0], ensure_ascii=False, indent=2))
 
 # %% [markdown]
-# ## 2. Embedding model: `BAAI/bge-small-en-v1.5`
+# ## 2. Embedding model: `BAAI/bge-small-en` (qua `EMBEDDING_BACKEND`)
 #
 # `fastembed` chạy ONNX → CPU friendly, không cần GPU. 384-dim vectors.
+# Notebook không hard-code tên model: nó đọc `app.embeddings.Embedder`, tức là
+# đọc `EMBEDDING_BACKEND` trong `.env`. Đổi backend → đổi cả model lẫn số chiều.
+#
+# > Mặc định là bản ONNX **không lượng tử hoá**. Bản `-v1.5` int8
+# > (`EMBEDDING_BACKEND=fastembed-q`) nhanh trên CPU có AVX-VNNI nhưng chậm
+# > ~10× trên CPU không có — đủ để một mình nó làm NB3 trượt ngưỡng P99 50 ms.
 #
 # > Trong production tiếng Việt 2026, bạn nên dùng `bge-m3` hoặc
 # > `text-embedding-3-large` (xem deck §1, bảng *Embedding Models 2026*).
 # > Cho lab này dùng `bge-small-en` để mọi laptop chạy được nhanh.
 
 # %%
-embedder = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+embedder = Embedder()
+print(f"backend: {describe()}")
 sample = list(embedder.embed(["cloud computing tiếng Việt"]))[0]
 print(f"Vector dim: {len(sample)}")
 print(f"First 8 values: {sample[:8].tolist()}")
@@ -67,7 +75,8 @@ print(f"First 8 values: {sample[:8].tolist()}")
 client = QdrantClient(":memory:")
 client.create_collection(
     collection_name="lab19",
-    vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+    # size theo model đang chọn, không phải hằng số — đổi backend là đổi chiều.
+    vectors_config=VectorParams(size=embedder.dim, distance=Distance.COSINE),
 )
 
 # %% [markdown]
@@ -148,9 +157,11 @@ for h in hits2:
 # pattern is mechanical, AI generates it perfectly. Just give it the spec
 # (batch size, payload schema) and review the diff.
 #
-# **Think hard yourself:** the choice of `BAAI/bge-small-en-v1.5`. Is it
+# **Think hard yourself:** the choice of `BAAI/bge-small-en`. Is it
 # right for tiếng Việt? (Hint: xem deck §1 bảng *Embedding Models 2026* —
 # `bge-m3` hỗ trợ multilingual tốt hơn nhưng nặng 4× hơn.) **Don't ask AI to
 # pick the embedding model without first telling it: language(s), corpus
 # size, latency budget, and re-index cost.** Đây là 1 quyết định kiến trúc,
-# không phải boilerplate.
+# không phải boilerplate. Ví dụ cụ thể trong lab này: bản int8 và bản fp32 của
+# *cùng một* model chênh nhau 10× latency trên CPU không có AVX-VNNI — chi tiết
+# mà không benchmark thì không ai đoán ra.

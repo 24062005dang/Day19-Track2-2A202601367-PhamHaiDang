@@ -41,7 +41,24 @@
       "Bash(.venv/Scripts/python.exe /tmp/dumpnb.py notebooks/05_filtered_search.ipynb notebooks/06_agent_retrieval.ipynb notebooks/07_semantic_cache.ipynb notebooks/08_feature_engineering.ipynb)",
       "Bash(wmic cpu *)",
       "Bash(grep -v '^$')",
-      "PowerShell(Get-CimInstance Win32_Processor)"
+      "PowerShell(Get-CimInstance Win32_Processor)",
+      "Bash(taskkill //F //FI \"IMAGENAME eq python.exe\" //FI \"WINDOWTITLE eq *\")",
+      "Bash(.venv/Scripts/python.exe /tmp/dumpnb.py notebooks/01_embeddings_index.ipynb notebooks/02_hybrid_search_rrf.ipynb)",
+      "Bash(PYTHONIOENCODING=utf-8 python /tmp/dump.py 03_search_api_benchmark.ipynb 3000)",
+      "Bash(PYTHONIOENCODING=utf-8 python /tmp/dump.py 04_feast_feature_store.ipynb 3000)",
+      "Bash(PYTHONIOENCODING=utf-8 python /tmp/dump.py 05_filtered_search.ipynb 3000)",
+      "Bash(PYTHONIOENCODING=utf-8 python /tmp/dump.py 06_agent_retrieval.ipynb 3000)",
+      "Bash(PYTHONIOENCODING=utf-8 python /tmp/dump.py 07_semantic_cache.ipynb 3000)",
+      "Bash(PYTHONIOENCODING=utf-8 python /tmp/dump.py 08_feature_engineering.ipynb 3000)",
+      "Bash(.venv/Scripts/python.exe -m jupytext --version)",
+      "Bash(.venv/Scripts/python.exe -m jupytext --sync notebooks/07_semantic_cache.ipynb)",
+      "Bash(.venv/Scripts/python.exe scripts/_patch_md.py notebooks/07_semantic_cache.ipynb \"Đọc bảng này thật kỹ\" scripts/_nb7.md)",
+      "Bash(rm scripts/_nb7.md)",
+      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe -c ' *)",
+      "Bash(python -c \"import os,platform;print\\(os.cpu_count\\(\\),platform.processor\\(\\)\\)\")",
+      "Bash(curl -s http://localhost:8011/healthz)",
+      "Bash(nohup .venv/Scripts/python.exe -m uvicorn scripts._exp_main:app --port 8012 --log-level warning)",
+      "Bash(curl -s http://localhost:8012/healthz)"
     ]
   }
 }

@@ -6,8 +6,10 @@ from app.cache import SemanticCache
 
 @pytest.fixture(scope="module")
 def embedder():
-    from fastembed import TextEmbedding
-    return TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+    # Same backend the notebooks and API use, so cache thresholds tuned in NB7
+    # are tuned against the vectors these tests exercise.
+    from app.embeddings import Embedder
+    return Embedder()
 
 
 def make(embedder, **kw):
